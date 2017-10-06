@@ -19,6 +19,7 @@ Set getData() and setData() type function for each variable binding to the given
 * `dfName` (def "df"): the name of the variable pointing to the DataFrame (this is normally just a string version of the previous parameter);
 * `varNameCol` (def "varName"): the name of the dataframe column containing the variable name
 * `valueCol` (def "value"): the name of the dataframe column storing the value
+* `retValue` (def NA): what the `var_()`` functions should return if nothing is found (default to NA)
 * `debug` (def false): returns a touple with the getData() and setData() expressions instead of actual parsing and evaluating them
 
 # Notes:
@@ -33,7 +34,7 @@ Set getData() and setData() type function for each variable binding to the given
 julia> defVariables(["supply","cons","exp","imp","transfCoeff","tranfCost"], data, dfName="data",varNameCol="variable",valueCol="value")
 ```
 """
-function defVars(vars, df; dfName="df", varNameCol="varName", valueCol="value", debug=false)
+function defVars(vars, df; dfName="df", varNameCol="varName", valueCol="value", retValue=NA, debug=false)
     colNames = names(df)
     varColPos = find(x -> x == Symbol(varNameCol), colNames )
     valueColPos = find(x -> x == Symbol(valueCol), colNames )
@@ -49,11 +50,16 @@ function defVars(vars, df; dfName="df", varNameCol="varName", valueCol="value", 
         # Get value
         expr1 *=  "\"\"\"Return the value of $(var) under the dimensions  $(dimNames...).\"\"\""  # documentation string
         expr1  *= "function $(var)_( $(dimNamesWithNA...)  );"
-        expr1  *= "return @where($(dfName), :$(varNameCol) .== \"$(var)\", "
+        expr1  *= "out = @where($(dfName), :$(varNameCol) .== \"$(var)\", "
         for (i,c) in enumerate(colNames)
         expr1  *= "isequal.(:$(c),$(c) ), "
         end
-        expr1  *= ")[end,:$(valueCol)];"
+        expr1  *= ");"
+        expr1  *= "  if size(out)[1] > 0;"
+        expr1  *= "    return out[end,:$(valueCol)];"
+        expr1  *= "  else;"
+        expr1  *= "    return $(retValue);"
+        expr1  *= "  end;"
         expr1  *= "end;"
         # Set value
         expr2  *=  "\"\"\"Set the value of $(var) equal to v under the dimensions $(dimNames...) (either updating existing value(s) or creating a new record).\"\"\""
@@ -71,7 +77,7 @@ function defVars(vars, df; dfName="df", varNameCol="varName", valueCol="value", 
                 expr2 *= ";"
             end
         end
-        expr2   *= "if any(dfFilter) > 0;"
+        expr2   *= "if any(dfFilter);"
         expr2   *=  " df[dfFilter, :$(valueCol)] = v;"
         expr2   *= "else;"
         outNames = []
