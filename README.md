@@ -51,7 +51,7 @@ defVars(variables,df;dfName="df",varNameCol="var", valueCol="value")
 ```
 
 Each time you run `defVars()`, access functions are automatically created for each variable in the form of `variable_(dim1,dim2,...)` to access the data and `variable!(value,dim1,dim2,..)` to store the value.
-For more info type ``?defVars` once you installed and loaded the package.
+For more info type `?defVars` once you installed and loaded the package.
 
 
 # Defining the "set" (dimensions) of your data
@@ -74,7 +74,7 @@ The @meq macro adds a bit of convenience transforming at parse time (so, without
 @meq consumption!(r in reg, pp in primPr) = production_(r,pp) - trValues_(r,pp)
 @meq consumption!(r in reg, sp in secPr)  = production_(r, sp)
 ```
-For more info on the @meq macro type ?@meq
+For more info on the @meq macro type `?@meq`
 
 ## Known limitation
 
