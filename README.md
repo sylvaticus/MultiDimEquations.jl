@@ -8,9 +8,17 @@ Allows to write multi-dimensional equations in Julia using an easy and compact s
 
 It is similar to Algebraic modeling language (AML) like GAMS or Julia/JuMP, but outside the domain of optimisation.
 
+
+[![Build Status](https://travis-ci.org/sylvaticus/MultiDimEquations.jl.svg?branch=master)](https://travis-ci.org/sylvaticus/MultiDimEquations.jl)
+[![codecov.io](http://codecov.io/github/sylvaticus/MultiDimEquations.jl/coverage.svg?branch=master)](http://codecov.io/github/sylvaticus/MultiDimEquations.jl?branch=master)
+
+[![OdsIO](http://pkg.julialang.org/badges/MultiDimEquations_0.5.svg)](http://pkg.julialang.org/?pkg=MultiDimEquations&ver=0.5)
+[![OdsIO](http://pkg.julialang.org/badges/MultiDimEquations_0.6.svg)](http://pkg.julialang.org/?pkg=MultiDimEquations&ver=0.6)
+
+
 ## Installation
-`Pkg.clone(https://github.com/sylvaticus/MultiDimEquations.jl.git)` (until the package is not registered)
-`Pkg.add("MultiDimEquations")` (when the package is eventually registered)
+* `Pkg.clone(https://github.com/sylvaticus/MultiDimEquations.jl.git)` (until the package is not registered)
+* `Pkg.add("MultiDimEquations")` (if and when the package will be eventually registered)
 
 ## Making available the package
 Due to the fact that the functions to access the data are dynamically created at run time, and would not be available to you with a normal `import <package>`, you have rather to include the file in your program:
