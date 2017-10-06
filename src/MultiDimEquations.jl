@@ -78,7 +78,7 @@ function defVars(vars, df; dfName="df", varNameCol="varName", valueCol="value", 
             end
         end
         expr2   *= "if any(dfFilter);"
-        expr2   *=  " df[dfFilter, :$(valueCol)] = v;"
+        expr2   *=  " $(dfName)[dfFilter, :$(valueCol)] = v;"
         expr2   *= "else;"
         outNames = []
         for (i,n) in enumerate(names(df))
