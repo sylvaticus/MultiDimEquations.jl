@@ -12,8 +12,8 @@ It is similar to Algebraic modeling language (AML) like GAMS or Julia/JuMP, but 
 [![Build Status](https://travis-ci.org/sylvaticus/MultiDimEquations.jl.svg?branch=master)](https://travis-ci.org/sylvaticus/MultiDimEquations.jl)
 [![codecov.io](http://codecov.io/github/sylvaticus/MultiDimEquations.jl/coverage.svg?branch=master)](http://codecov.io/github/sylvaticus/MultiDimEquations.jl?branch=master)
 
-[![OdsIO](http://pkg.julialang.org/badges/MultiDimEquations_0.5.svg)](http://pkg.julialang.org/?pkg=MultiDimEquations&ver=0.5)
-[![OdsIO](http://pkg.julialang.org/badges/MultiDimEquations_0.6.svg)](http://pkg.julialang.org/?pkg=MultiDimEquations&ver=0.6)
+[![MultiDimEquations](http://pkg.julialang.org/badges/MultiDimEquations_0.5.svg)](http://pkg.julialang.org/?pkg=MultiDimEquations&ver=0.5)
+[![MultiDimEquations](http://pkg.julialang.org/badges/MultiDimEquations_0.6.svg)](http://pkg.julialang.org/?pkg=MultiDimEquations&ver=0.6)
 
 
 ## Installation
