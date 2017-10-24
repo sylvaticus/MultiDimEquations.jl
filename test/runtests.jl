@@ -1,7 +1,11 @@
+Pkg.checkout("IndexedTables") # temporary needed as the version with bugfix is released 
+
 using DataFrames
 using Base.Test
 
 include("$(Pkg.dir())/MultiDimEquations/src/MultiDimEquations.jl")
+
+
 
 # TEST 1: Testing both defVars()and the @meq macro using a single IndexedTable
 df = wsv"""
