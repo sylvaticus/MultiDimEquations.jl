@@ -3,7 +3,7 @@ using Base.Test
 
 include("$(Pkg.dir())/MultiDimEquations/src/MultiDimEquations.jl")
 
-# TEST 1: Testing both defVars()and the @meq macro
+# TEST 1: Testing both defVars()and the @meq macro using a single IndexedTable
 df = wsv"""
 reg	prod	var	value
 us	banana	production	10
@@ -26,7 +26,8 @@ eu	juice	transfCoef	NA
 eu	juice	trValues    NA
 """
 variables =  vcat(unique(dropna(df[:var])),["consumption"])
-defVars(variables,df;dfName="df",varNameCol="var", valueCol="value")
+#defVars(variables,df;dfName="df",varNameCol="var", valueCol="value")
+data = defVars(variables, df, tableName="data", varNameCol="var", valueCol="value")
 products = ["banana","apples","juice"]
 primPr   = products[1:2]
 secPr    = [products[3]]
@@ -37,10 +38,16 @@ reg      = ["us","eu"]
 @meq consumption!(r in reg, sp in secPr)  = production_(r, sp)
 totalConsumption = sum(consumption_(r,p) for r in reg, p in products)
 
-totalConsumption == 26.6
-
 @test totalConsumption == 26.6
 
+# TEST 2: Testing the @meq macro with individual IndexedTables
+a = IndexedTable([["a","a","b","b"],[1,2,1,2]]...,[1,2,3,4])
+dim1 = ["a","b"]
+dim2 = [1,2]
 
-# Test 2: Fake test, this should not pass
+@meq a[d1 in dim1,2] = a[d1,1]+3
+tot = sum(a[d1,d2] for d1 in dim1, d2 in dim2)
+@test tot == 14
+
+# Test n: Fake test, this should not pass
 # @test 1 == 2

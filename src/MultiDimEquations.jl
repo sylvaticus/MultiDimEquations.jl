@@ -1,4 +1,3 @@
-
 using DataFrames, IndexedTables
 
 ##############################################################################
@@ -55,7 +54,7 @@ function defVars(vars, df; tableName="table", varNameCol="varName", valueCol="va
         end
     end
     #typeDimCols    = [eltype(df[dim]) for dim in colNames]
-    typeValueCol   = eltype(df[Symbol(valueCol)])
+    typeValueCol   =  length(find(x -> isna(x), df[Symbol(valueCol)]))>0 ? Union{eltype(df[Symbol(valueCol)]),DataArrays.NAtype} : eltype(df[Symbol(valueCol)])
     typeVarDimCols = vcat(typeVarCol,typeDimCols)
     dimValues = [Array{T,1}() for T in typeVarDimCols]
     t = IndexedTables.Table(dimValues..., names=vcat(Symbol(varNameCol),colNames), Array{typeValueCol,1}())
