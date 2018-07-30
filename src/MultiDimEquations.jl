@@ -1,4 +1,4 @@
-using DataFrames, IndexedTables
+using DataFrames, IndexedTables, Missings
 
 ##############################################################################
 ##
@@ -17,13 +17,13 @@ Set getData() and setData() type function for each variable binding to the Index
 * `tableName` (def "df"): the name of the variable pointing to the IndexedTable returned by this function (a string);
 * `varNameCol` (def "varName"): the name of the dataframe column containing the variable name
 * `valueCol` (def "value"): the name of the dataframe column storing the value
-* `retValue` (def NA): what the `var_()`` functions should return if nothing is found (default to NA)
+* `retValue` (def missing): what the `var_()`` functions should return if nothing is found (default to missing)
 * `debug` (def false): returns a touple with the getData() and setData() expressions instead of actual parsing and evaluating them
 
 # Notes:
 * This function autogenerate two type of functions:
-    * getData-type of function in the form of var1_(dim1=NA,dim2=NA,...)
-    * setData-type of function in the form of var1!(value,dim1=NA,dim2=NA,..)
+    * getData-type of function in the form of var1_(dim1=key1,dim2=key2,...)
+    * setData-type of function in the form of var1!(value,dim1=key1,dim2=key2,..)
 * If debug is passed, the function returns a touple with (getData(), setData()) expressions. These can then be parsed and evaluated as needed.
 
 
@@ -32,7 +32,7 @@ Set getData() and setData() type function for each variable binding to the Index
 julia> tableData = defVars(["supply","cons","exp","imp","transfCoeff","tranfCost"], data, tableName="tableData",varNameCol="variable",valueCol="value")
 ```
 """
-function defVars(vars, df; tableName="table", varNameCol="varName", valueCol="value", retValue=NA, debug=false)
+function defVars(vars, df; tableName="table", varNameCol="varName", valueCol="value", retValue=missing, debug=false)
 
     colNames = names(df)
     varColPos = find(x -> x == Symbol(varNameCol), colNames )
@@ -46,15 +46,15 @@ function defVars(vars, df; tableName="table", varNameCol="varName", valueCol="va
     typeVarCol     = eltype(df[Symbol(varNameCol)])
     typeDimCols    = []
     for dim in colNames
-        nNA = length(find(x -> isna(x), df[dim]))
-        if nNA == 0
+        nmissing = length(find(x -> isna(x), df[dim]))
+        if nmissing == 0
             push!(typeDimCols,eltype(df[dim]))
         else
-            push!(typeDimCols,Union{eltype(df[dim]),DataArrays.NAtype})
+            push!(typeDimCols,Union{eltype(df[dim]),missing})
         end
     end
     #typeDimCols    = [eltype(df[dim]) for dim in colNames]
-    typeValueCol   =  length(find(x -> isna(x), df[Symbol(valueCol)]))>0 ? Union{eltype(df[Symbol(valueCol)]),DataArrays.NAtype} : eltype(df[Symbol(valueCol)])
+    typeValueCol   =  length(find(x -> isna(x), df[Symbol(valueCol)]))>0 ? Union{eltype(df[Symbol(valueCol)]),missing} : eltype(df[Symbol(valueCol)])
     typeVarDimCols = vcat(typeVarCol,typeDimCols)
     dimValues = [Array{T,1}() for T in typeVarDimCols]
     t = IndexedTables.Table(dimValues..., names=vcat(Symbol(varNameCol),colNames), Array{typeValueCol,1}())
@@ -71,14 +71,14 @@ function defVars(vars, df; tableName="table", varNameCol="varName", valueCol="va
     # Creating get/set functions for each variable
     dimNames = ["$(colNames[i]), " for i in 1:(length(colNames)-1)]
     push!(dimNames, "$(colNames[length(colNames)])")
-    dimNamesWithNA = ["$(colNames[i]) = NA, " for i in 1:(length(colNames)-1)]
-    push!(dimNamesWithNA, "$(colNames[length(colNames)]) = NA")
+    dimNamesWithmissing = ["$(colNames[i]) = missing, " for i in 1:(length(colNames)-1)]
+    push!(dimNamesWithmissing, "$(colNames[length(colNames)]) = missing")
     expr1 = ""
     expr2 = ""
     for var in vars
         # Get value
         expr1 *=  "\"\"\"Return the value of $(var) under the dimensions  $(dimNames...).\"\"\""  # documentation string
-        expr1  *= "function $(var)_( $(dimNamesWithNA...)  );"
+        expr1  *= "function $(var)_( $(dimNamesWithmissing...)  );"
         expr1  *= "    try;"
         expr1  *= "        return $(tableName)[\"$var\",$(dimNames...)];"
         expr1  *= "    catch  e;"
@@ -90,7 +90,7 @@ function defVars(vars, df; tableName="table", varNameCol="varName", valueCol="va
         expr1  *= "end;"
         # Set value
         expr2  *=  "\"\"\"Set the value of $(var) equal to v under the dimensions $(dimNames...) (either updating existing value(s) or creating a new record).\"\"\""
-        expr2  *= "function $(var)!(v, $(dimNamesWithNA...)  );"
+        expr2  *= "function $(var)!(v, $(dimNamesWithmissing...)  );"
         expr2  *= "    $(tableName)[\"$var\",$(dimNames...)] = v;"
         expr2  *= "    return v;"
         expr2  *= "end;"
@@ -126,13 +126,13 @@ end
 # * `dfName` (def "df"): the name of the variable pointing to the DataFrame (this is normally just a string version of the previous parameter);
 # * `varNameCol` (def "varName"): the name of the dataframe column containing the variable name
 # * `valueCol` (def "value"): the name of the dataframe column storing the value
-# * `retValue` (def NA): what the `var_()`` functions should return if nothing is found (default to NA)
+# * `retValue` (def missing): what the `var_()`` functions should return if nothing is found (default to missing)
 # * `debug` (def false): returns a touple with the getData() and setData() expressions instead of actual parsing and evaluating them
 #
 # # Notes:
 # * This function autogenerate two type of functions:
-#     * getData-type of function in the form of var1_(dim1=NA,dim2=NA,...)
-#     * setData-type of function in the form of var1!(value,dim1=NA,dim2=NA,..)
+#     * getData-type of function in the form of var1_(dim1=key1,dim2=key2,...)
+#     * setData-type of function in the form of var1!(value,dim1=key1,dim2=key2,..)
 # * If debug is passed, the function returns a touple with (getData(), setData()) expressions. These can then be parsed and evaluated as needed.
 #
 #
@@ -141,7 +141,7 @@ end
 # julia> defVarsDf(["supply","cons","exp","imp","transfCoeff","tranfCost"], data, dfName="data",varNameCol="variable",valueCol="value")
 # ```
 # """
-# function defVarsDf(vars, df; dfName="df", varNameCol="varName", valueCol="value", retValue=NA, debug=false)
+# function defVarsDf(vars, df; dfName="df", varNameCol="varName", valueCol="value", retValue=missing, debug=false)
 #     colNames = names(df)
 #     varColPos = find(x -> x == Symbol(varNameCol), colNames )
 #     valueColPos = find(x -> x == Symbol(valueCol), colNames )
@@ -149,14 +149,14 @@ end
 #     deleteat!(colNames , find(x -> x == Symbol(valueCol), colNames )) # index changed bec of previous delete
 #     dimNames = ["$(colNames[i]), " for i in 1:(length(colNames)-1)]
 #     push!(dimNames, "$(colNames[length(colNames)])")
-#     dimNamesWithNA = ["$(colNames[i]) = NA, " for i in 1:(length(colNames)-1)]
-#     push!(dimNamesWithNA, "$(colNames[length(colNames)]) = NA")
+#     dimNamesWithmissing = ["$(colNames[i]) = missing, " for i in 1:(length(colNames)-1)]
+#     push!(dimNamesWithmissing, "$(colNames[length(colNames)]) = missing")
 #     expr1 = ""
 #     expr2 = ""
 #     for var in vars
 #         # Get value
 #         expr1 *=  "\"\"\"Return the value of $(var) under the dimensions  $(dimNames...).\"\"\""  # documentation string
-#         expr1  *= "function $(var)_( $(dimNamesWithNA...)  );"
+#         expr1  *= "function $(var)_( $(dimNamesWithmissing...)  );"
 #         expr1  *= "out = @where($(dfName), :$(varNameCol) .== \"$(var)\", "
 #         for (i,c) in enumerate(colNames)
 #         expr1  *= "isequal.(:$(c),$(c) ), "
@@ -170,7 +170,7 @@ end
 #         expr1  *= "end;"
 #         # Set value
 #         expr2  *=  "\"\"\"Set the value of $(var) equal to v under the dimensions $(dimNames...) (either updating existing value(s) or creating a new record).\"\"\""
-#         expr2  *= "function $(var)!(v, $(dimNamesWithNA...)  );"
+#         expr2  *= "function $(var)!(v, $(dimNamesWithmissing...)  );"
 #         expr2  *= "dfFilter = "
 #         expr2  *= "($(dfName)[:$(varNameCol)] .== \"$var\") "
 #         if length(colNames) > 0
