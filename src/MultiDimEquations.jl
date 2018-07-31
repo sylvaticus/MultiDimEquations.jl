@@ -46,18 +46,18 @@ function defVars(vars, df; tableName="table", varNameCol="varName", valueCol="va
     typeVarCol     = eltype(df[Symbol(varNameCol)])
     typeDimCols    = []
     for dim in colNames
-        nmissing = length(find(x -> isna(x), df[dim]))
+        nmissing = length(find(x -> ismissing(x), df[dim]))
         if nmissing == 0
             push!(typeDimCols,eltype(df[dim]))
         else
-            push!(typeDimCols,Union{eltype(df[dim]),missing})
+            push!(typeDimCols,Union{eltype(df[dim]),Missing})
         end
     end
     #typeDimCols    = [eltype(df[dim]) for dim in colNames]
-    typeValueCol   =  length(find(x -> isna(x), df[Symbol(valueCol)]))>0 ? Union{eltype(df[Symbol(valueCol)]),missing} : eltype(df[Symbol(valueCol)])
+    typeValueCol   =  length(find(x -> ismissing(x), df[Symbol(valueCol)]))>0 ? Union{eltype(df[Symbol(valueCol)]),missing} : eltype(df[Symbol(valueCol)])
     typeVarDimCols = vcat(typeVarCol,typeDimCols)
     dimValues = [Array{T,1}() for T in typeVarDimCols]
-    t = IndexedTables.Table(dimValues..., names=vcat(Symbol(varNameCol),colNames), Array{typeValueCol,1}())
+    t = IndexedTables.NDSparse(dimValues..., names=vcat(Symbol(varNameCol),colNames), Array{typeValueCol,1}())
 
     # filling the table with data
     for r in eachrow(df)
