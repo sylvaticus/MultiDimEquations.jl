@@ -1,14 +1,10 @@
-Pkg.checkout("IndexedTables") # temporary needed as the version with bugfix is released
-
 using DataFrames
 using Base.Test
 
 include("$(Pkg.dir())/MultiDimEquations/src/MultiDimEquations.jl")
 
-
-
 # TEST 1: Testing both defVars()and the @meq macro using a single IndexedTable
-df = wsv"""
+df = CSV.read(IOBuffer("""
 reg	prod	var	value
 us	banana	production	10
 us	banana	transfCoef	0.6
@@ -28,7 +24,7 @@ eu	apples	trValues	4
 eu	juice	production	NA
 eu	juice	transfCoef	NA
 eu	juice	trValues    NA
-"""
+""", delim=" ", ignorerepeated=true)
 variables =  vcat(unique(dropna(df[:var])),["consumption"])
 #defVars(variables,df;dfName="df",varNameCol="var", valueCol="value")
 data = defVars(variables, df, tableName="data", varNameCol="var", valueCol="value")

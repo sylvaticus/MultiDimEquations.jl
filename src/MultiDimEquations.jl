@@ -1,4 +1,4 @@
-using DataFrames, IndexedTables, Missings
+using DataFrames, IndexedTables, CSV
 
 ##############################################################################
 ##
@@ -35,18 +35,18 @@ julia> tableData = defVars(["supply","cons","exp","imp","transfCoeff","tranfCost
 function defVars(vars, df; tableName="table", varNameCol="varName", valueCol="value", retValue=missing, debug=false)
 
     colNames = names(df)
-    varColPos = find(x -> x == Symbol(varNameCol), colNames )
-    valueColPos = find(x -> x == Symbol(valueCol), colNames )
+    varColPos = findall(x -> x == Symbol(varNameCol), colNames )
+    valueColPos = findall(x -> x == Symbol(valueCol), colNames )
     colNamesString = [String(c) for c in colNames]
 
     deleteat!(colNames , varColPos)
-    deleteat!(colNames , find(x -> x == Symbol(valueCol), colNames )) # index changed bec of previous delete
+    deleteat!(colNames , findall(x -> x == Symbol(valueCol), colNames )) # index changed bec of previous delete
 
     # creating empty table with types from the DataFrame
     typeVarCol     = eltype(df[Symbol(varNameCol)])
     typeDimCols    = []
     for dim in colNames
-        nmissing = length(find(x -> ismissing(x), df[dim]))
+        nmissing = length(findall(x -> ismissing(x), df[dim]))
         if nmissing == 0
             push!(typeDimCols,eltype(df[dim]))
         else
@@ -54,7 +54,7 @@ function defVars(vars, df; tableName="table", varNameCol="varName", valueCol="va
         end
     end
     #typeDimCols    = [eltype(df[dim]) for dim in colNames]
-    typeValueCol   =  length(find(x -> ismissing(x), df[Symbol(valueCol)]))>0 ? Union{eltype(df[Symbol(valueCol)]),missing} : eltype(df[Symbol(valueCol)])
+    typeValueCol   =  length(findall(x -> ismissing(x), df[Symbol(valueCol)]))>0 ? Union{eltype(df[Symbol(valueCol)]),missing} : eltype(df[Symbol(valueCol)])
     typeVarDimCols = vcat(typeVarCol,typeDimCols)
     dimValues = [Array{T,1}() for T in typeVarDimCols]
     t = IndexedTables.NDSparse(dimValues..., names=vcat(Symbol(varNameCol),colNames), Array{typeValueCol,1}())
@@ -77,7 +77,7 @@ function defVars(vars, df; tableName="table", varNameCol="varName", valueCol="va
     expr2 = ""
     for var in vars
         # Get value
-        expr1 *=  "\"\"\"Return the value of $(var) under the dimensions  $(dimNames...).\"\"\""  # documentation string
+        expr1 *=  "\"\"\"Return the value of $(var) under the dimensions  $(dimNames...).\"\"\" "  # documentation string
         expr1  *= "function $(var)_( $(dimNamesWithmissing...)  );"
         expr1  *= "    try;"
         expr1  *= "        return $(tableName)[\"$var\",$(dimNames...)];"
@@ -87,18 +87,18 @@ function defVars(vars, df; tableName="table", varNameCol="varName", valueCol="va
         expr1  *= "        end;"
         expr1  *= "        rethrow(e);"
         expr1  *= "    end;"
-        expr1  *= "end;"
+        expr1  *= "end; "
         # Set value
-        expr2  *=  "\"\"\"Set the value of $(var) equal to v under the dimensions $(dimNames...) (either updating existing value(s) or creating a new record).\"\"\""
+        expr2  *=  "\"\"\"Set the value of $(var) equal to v under the dimensions $(dimNames...) (either updating existing value(s) or creating a new record).\"\"\" "
         expr2  *= "function $(var)!(v, $(dimNamesWithmissing...)  );"
         expr2  *= "    $(tableName)[\"$var\",$(dimNames...)] = v;"
         expr2  *= "    return v;"
-        expr2  *= "end;"
+        expr2  *= "end; "
     end
     if debug return (expr1,expr2) end
-    pexpr1 = parse(expr1)
+    pexpr1 = Meta.parse(expr1)
     eval(pexpr1)
-    pexpr2 = parse(expr2)
+    pexpr2 = Meta.parse(expr2)
     eval(pexpr2)
     return t
 end
