@@ -24,8 +24,8 @@ eu	apples	trValues	4
 eu	juice	production	NA
 eu	juice	transfCoef	NA
 eu	juice	trValues    NA
-""", delim=" ", ignorerepeated=true)
-variables =  vcat(unique(dropna(df[:var])),["consumption"])
+"""), delim=" ", ignorerepeated=true)
+variables =  vcat(unique(DataFrames.dropmissing(df)[:var]),["consumption"])
 #defVars(variables,df;dfName="df",varNameCol="var", valueCol="value")
 data = defVars(variables, df, tableName="data", varNameCol="var", valueCol="value")
 products = ["banana","apples","juice"]
