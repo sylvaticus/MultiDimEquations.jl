@@ -1,7 +1,8 @@
+using Test
 using DataFrames
-using Base.Test
 
-include("$(Pkg.dir())/MultiDimEquations/src/MultiDimEquations.jl")
+include(Base.find_package("MultiDimEquations"))
+
 
 # TEST 1: Testing both defVars()and the @meq macro using a single IndexedTable
 df = CSV.read(IOBuffer("""

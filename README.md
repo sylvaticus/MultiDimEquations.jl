@@ -9,12 +9,10 @@ Allows to write multi-dimensional equations in Julia using an easy and compact s
 It is somehow similar to Algebraic modeling language (AML) like GAMS or Julia/JuMP, but outside the domain of optimisation.
 
 
-[![Build Status](https://travis-ci.org/sylvaticus/MultiDimEquations.jl.svg?branch=master)](https://travis-ci.org/sylvaticus/MultiDimEquations.jl)
+[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://sylvaticus.github.io/MultiDimEquations.jl/stable)
+[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://sylvaticus.github.io/MultiDimEquations.jl/dev)
+[![Build status (Github Actions)](https://github.com/sylvaticus/MultiDimEquations.jl/workflows/CI/badge.svg)](https://github.com/sylvaticus/MultiDimEquations.jl/actions)
 [![codecov.io](http://codecov.io/github/sylvaticus/MultiDimEquations.jl/coverage.svg?branch=master)](http://codecov.io/github/sylvaticus/MultiDimEquations.jl?branch=master)
-
-[![MultiDimEquations](http://pkg.julialang.org/badges/MultiDimEquations_0.6.svg)](http://pkg.julialang.org/?pkg=MultiDimEquations&ver=0.6)
-[![MultiDimEquations](http://pkg.julialang.org/badges/MultiDimEquations_0.6.svg)](http://pkg.julialang.org/?pkg=MultiDimEquations&ver=0.6)
-
 
 ## Installation
 * `Pkg.add("MultiDimEquations")`
