@@ -1,5 +1,9 @@
 using DataFrames, IndexedTables, CSV
 
+module MultiDimEquations
+
+export defVars, @meq
+
 ##############################################################################
 ##
 ## defVars()
@@ -43,21 +47,25 @@ function defVars(vars, df; tableName="table", varNameCol="varName", valueCol="va
     deleteat!(colNames , findall(x -> x == Symbol(valueCol), colNames )) # index changed bec of previous delete
 
     # creating empty table with types from the DataFrame
-    typeVarCol     = eltype(df[Symbol(varNameCol)])
+    typeVarCol     = eltype(df[!,varNameCol])
     typeDimCols    = []
     for dim in colNames
-        nmissing = length(findall(x -> ismissing(x), df[dim]))
+        nmissing = length(findall(x -> ismissing(x), df[!,dim]))
         if nmissing == 0
-            push!(typeDimCols,eltype(df[dim]))
+            push!(typeDimCols,eltype(df[!,dim]))
         else
-            push!(typeDimCols,Union{eltype(df[dim]),Missing})
+            push!(typeDimCols,Union{eltype(df[!,dim]),Missing})
         end
     end
     #typeDimCols    = [eltype(df[dim]) for dim in colNames]
-    typeValueCol   =  length(findall(x -> ismissing(x), df[Symbol(valueCol)]))>0 ? Union{eltype(df[Symbol(valueCol)]),missing} : eltype(df[Symbol(valueCol)])
+    typeValueCol   =  length(findall(x -> ismissing(x), df[!,valueCol])) > 0 ? Union{eltype(df[!,valueCol]),Missing} : eltype(df[!,valueCol])
     typeVarDimCols = vcat(typeVarCol,typeDimCols)
     dimValues = [Array{T,1}() for T in typeVarDimCols]
-    t = IndexedTables.NDSparse(dimValues..., names=vcat(Symbol(varNameCol),colNames), Array{typeValueCol,1}())
+    println(dimValues)
+    println(varNameCol)
+    println(colNames)
+    println(typeValueCol)
+    t = NDSparse(dimValues..., names=vcat(Symbol(varNameCol),colNames), Array{typeValueCol,1}())
 
     # filling the table with data
     for r in eachrow(df)
@@ -77,6 +85,7 @@ function defVars(vars, df; tableName="table", varNameCol="varName", valueCol="va
     expr2 = ""
     for var in vars
         # Get value
+        expr1 *=  "export $(var)_"
         expr1 *=  "\"\"\"Return the value of $(var) under the dimensions  $(dimNames...).\"\"\" "  # documentation string
         expr1  *= "function $(var)_( $(dimNamesWithmissing...)  );"
         expr1  *= "    try;"
@@ -89,6 +98,7 @@ function defVars(vars, df; tableName="table", varNameCol="varName", valueCol="va
         expr1  *= "    end;"
         expr1  *= "end; "
         # Set value
+        expr2 *=  "export $(var)_!"
         expr2  *=  "\"\"\"Set the value of $(var) equal to v under the dimensions $(dimNames...) (either updating existing value(s) or creating a new record).\"\"\" "
         expr2  *= "function $(var)!(v, $(dimNamesWithmissing...)  );"
         expr2  *= "    $(tableName)[\"$var\",$(dimNames...)] = v;"
@@ -288,3 +298,5 @@ end
 #    #show(ret)
 #    return ret
 # end
+
+end

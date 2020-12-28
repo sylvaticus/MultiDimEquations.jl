@@ -1,34 +1,42 @@
 using Test
-using DataFrames
+using DataFrames, CSV
 
-include(Base.find_package("MultiDimEquations"))
+#include(Base.find_package("MultiDimEquations"))
 
 
 # TEST 1: Testing both defVars()and the @meq macro using a single IndexedTable
 df = CSV.read(IOBuffer("""
-reg	prod	var	value
-us	banana	production	10
-us	banana	transfCoef	0.6
-us	banana	trValues	2
-us	apples	production	7
-us	apples	transfCoef	0.7
-us	apples	trValues	5
-us	juice	production	NA
-us	juice	transfCoef	NA
-us	juice	trValues	NA
-eu	banana	production	5
-eu	banana	transfCoef	0.7
-eu	banana	trValues	1
-eu	apples	production	8
-eu	apples	transfCoef	0.8
-eu	apples	trValues	4
-eu	juice	production	NA
-eu	juice	transfCoef	NA
-eu	juice	trValues    NA
-"""), delim=" ", ignorerepeated=true)
-variables =  vcat(unique(DataFrames.dropmissing(df)[:var]),["consumption"])
+reg prod var value
+us banana production 10
+us banana transfCoef    0.6
+us banana trValues      2
+us apples production    7
+us apples transfCoef    0.7
+us apples trValues      5
+us juice production     missing
+us juice transfCoef     missing
+us juice trValues       missing
+eu banana production    5
+eu banana transfCoef    0.7
+eu banana trValues      1
+eu apples production    8
+eu apples transfCoef    0.8
+eu apples trValues 4
+eu juice production missing
+eu juice transfCoef missing
+eu juice trValues missing
+"""), DataFrame, delim=" ", ignorerepeated=true, copycols=true, missingstring="missing")
+variables =  vcat(unique(DataFrames.dropmissing(df).var),["consumption"])
 #defVars(variables,df;dfName="df",varNameCol="var", valueCol="value")
 data = defVars(variables, df, tableName="data", varNameCol="var", valueCol="value")
+#a = NDSparse([String[],Int64[],Float64[]]..., names=["dim1","dim2","value"])
+
+#a["aaa",1]=3.1
+#a
+
+#t = IndexedTables.NDSparse(dimValues..., names=vcat(Symbol(varNameCol),colNames), Array{typeValueCol,1}())
+
+
 products = ["banana","apples","juice"]
 primPr   = products[1:2]
 secPr    = [products[3]]
