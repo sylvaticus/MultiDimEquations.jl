@@ -61,10 +61,10 @@ function defVars(vars, df; tableName="table", varNameCol="varName", valueCol="va
     typeValueCol   =  length(findall(x -> ismissing(x), df[!,valueCol])) > 0 ? Union{eltype(df[!,valueCol]),Missing} : eltype(df[!,valueCol])
     typeVarDimCols = vcat(typeVarCol,typeDimCols)
     dimValues = [Array{T,1}() for T in typeVarDimCols]
-    println(dimValues)
-    println(varNameCol)
-    println(colNames)
-    println(typeValueCol)
+    #println(dimValues)
+    #println(varNameCol)
+    #println(colNames)
+    #println(typeValueCol)
     t = NDSparse(dimValues..., names=vcat(Symbol(varNameCol),colNames), Array{typeValueCol,1}())
 
     # filling the table with data
