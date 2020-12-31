@@ -1,7 +1,21 @@
 using Test
 using DataFrames, CSV
+import MultiDimEquations:defVars, defLoadVars
 
+cd(@__DIR__)
 #include(Base.find_package("MultiDimEquations"))
+#include("../src/MultiDimEquations.jl")
+
+# NEW TEST
+# Checking empty variable definition
+(exp,consumption)   = defVars(["product","regions","years"],[String,String,Int64],n=2)
+(exp2,consumption2) = defVars([3,2,5],n=2)
+exp["banana","Canada",2010] = 2
+@test exp["banana","Canada",2010] + 1 == 3
+consumption2[2,1,5] = 2
+@test consumption2[2,1,5] + 1 == 3
+
+
 
 
 # TEST 1: Testing both defVars()and the @meq macro using a single IndexedTable
@@ -28,13 +42,11 @@ eu juice trValues missing
 """), DataFrame, delim=" ", ignorerepeated=true, copycols=true, missingstring="missing")
 variables =  vcat(unique(DataFrames.dropmissing(df).var),["consumption"])
 #defVars(variables,df;dfName="df",varNameCol="var", valueCol="value")
-data = defVars(variables, df, tableName="data", varNameCol="var", valueCol="value")
-#a = NDSparse([String[],Int64[],Float64[]]..., names=["dim1","dim2","value"])
 
-#a["aaa",1]=3.1
-#a
+consumption                       = defVars(["reg","prod"],[String,String],valueNames=["consumption"],valueTypes=[Float64],n=1)
 
-#t = IndexedTables.NDSparse(dimValues..., names=vcat(Symbol(varNameCol),colNames), Array{typeValueCol,1}())
+(production,transfCoef,trValues)  = defVars(["production","transfCoef","trValues"], df,["reg","prod"], varNameCol="var", valueCol="value")
+consumption                       = defEmptyIT(["reg","prod"],[String,String],valueNames=["consumption"],valueTypes=[Float64],n=1)
 
 
 products = ["banana","apples","juice"]
@@ -42,8 +54,8 @@ primPr   = products[1:2]
 secPr    = [products[3]]
 reg      = ["us","eu"]
 # equivalent to [production!(sum(trValues_(r,pp) * transfCoef_(r,pp)  for pp in primPr), r, sp) for r in reg, sp in secPr]
-@meq production!(r in reg, sp in secPr)   = sum(trValues_(r,pp) * transfCoef_(r,pp)  for pp in primPr)
-@meq consumption!(r in reg, pp in primPr) = production_(r,pp) - trValues_(r,pp)
+@meq production[r in reg, sp in secPr]   = sum(trValues[r,pp] * transfCoef[r,pp]  for pp in primPr)
+@meq consumption[r in reg, pp in primPr] = production[r,pp] - trValues[r,pp]
 @meq consumption!(r in reg, sp in secPr)  = production_(r, sp)
 totalConsumption = sum(consumption_(r,p) for r in reg, p in products)
 
