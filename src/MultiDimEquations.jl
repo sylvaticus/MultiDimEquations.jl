@@ -30,8 +30,8 @@ julia> (vol,mortCoef)  = defVars(["vol","mortCoef"], forData,["region","d1","yea
 """
 function defLoadVars(vars, df, dimsNameCols; varNameCol="varName", valueCol="value",sparse=false)
     valueType = eltype(df[!,valueCol])
-    nDims = lengths(dimsNameCols)
-    if !sparse
+    nDims     = length(dimsNameCols)
+    if sparse
         toReturn = NDSparse[]
         sDimensions = [Symbol(d) for d in dimsNameCols]
         for var in vars
@@ -47,10 +47,41 @@ function defLoadVars(vars, df, dimsNameCols; varNameCol="varName", valueCol="val
         end
         return (toReturn...,)
     else
+        toReturn = Array[]
+        for var in vars
+            dfVar = df[df[!,varNameCol] .== var,:]
+            dimItems = [unique(dfVar[!,col]) for col in dimsNameCols]
+            size = [length(dimItem_i) for dimItem_i in dimItems]
+            varArray = defVars(size, valueType=valueType,n=1)[1]
 
-        toReturn = Array{Array{valueType,nDims}}[]
+            for i in CartesianIndices(varArray)
+               cIdx = Tuple(i)
+               particularDims = [map(x->dimItems[d][x], cIdx[d]) for d in 1:nDims]
 
-
+               selectionArray = fill(false,Base.size(dfVar,1))
+               for (i,row) in enumerate(eachrow(dfVar))
+                   dimFilter = true
+                   for (d,dim) in enumerate(dimsNameCols)
+                       if (row[dim] != particularDims[d])
+                           dimFilter = false
+                           break
+                       end
+                   end
+                   selectionArray[i] = dimFilter
+               end
+               particularValueArray = dfVar[selectionArray,valueCol]
+               if(length(particularValueArray)>1)
+                   @error "In converting a long dataframe to an array, I found more than one record with the same keys."
+               elseif length(particularValueArray)==0
+                   particularValue = missing
+               else
+                   particularValue = particularValueArray[1]
+               end
+               varArray[i]  = particularValue
+            end
+            push!(toReturn,varArray)
+        end
+        return (toReturn...,)
     end
 end
 

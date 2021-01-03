@@ -32,21 +32,46 @@ us juice transfCoef     missing
 us juice trValues       missing
 eu banana production    5
 eu banana transfCoef    0.7
-eu banana trValues      1
 eu apples production    8
 eu apples transfCoef    0.8
 eu apples trValues 4
 eu juice production missing
 eu juice transfCoef missing
 eu juice trValues missing
-"""), DataFrame, delim=" ", ignorerepeated=true, copycols=true, missingstring="missing")
-variables =  vcat(unique(DataFrames.dropmissing(df).var),["consumption"])
-#defVars(variables,df;dfName="df",varNameCol="var", valueCol="value")
+"""), DataFrame, delim=" ", ignorerepeated=true, copycols=true, missingstring="missing") # missing eu banana trValues      1
+(production,transfCoef,trValues)     = defLoadVars(["production","transfCoef","trValues"], df,["reg","prod"], varNameCol="var", valueCol="value",sparse=true)
+(production2,transfCoef2,trValues2)  = defLoadVars(["production","transfCoef","trValues"], df,["reg","prod"], varNameCol="var", valueCol="value",sparse=false)
+
+
+
+dimItems = [unique(df[!,col]) for col in dimsNameCols]
+size     = [length(dimItem_i) for dimItem_i in dimItems]
+toReturn = defVars(size, valueType=valueType,n=n)
+
+for d in 1:nDims
+    dLength = size(d)
+    for i in 1:
+
+
+
+size = (4,2,3)
+outMatrix = fill(missing,size)
+nDims = length(size)
+nCombs = prod(size)
+for c in 1:nCombs
+    for d in 1:nDims
+
+
+
+
+
+
+
+
+
+consumption                       = defEmptyIT(["reg","prod"],[String,String],valueNames=["consumption"],valueTypes=[Float64],n=1)
 
 consumption                       = defVars(["reg","prod"],[String,String],valueNames=["consumption"],valueTypes=[Float64],n=1)
-
-(production,transfCoef,trValues)  = defVars(["production","transfCoef","trValues"], df,["reg","prod"], varNameCol="var", valueCol="value")
-consumption                       = defEmptyIT(["reg","prod"],[String,String],valueNames=["consumption"],valueTypes=[Float64],n=1)
 
 
 products = ["banana","apples","juice"]
