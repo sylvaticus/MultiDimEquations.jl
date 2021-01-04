@@ -48,9 +48,9 @@ function defLoadVars(vars, df, dimsNameCols; varNameCol="varName", valueCol="val
         return (toReturn...,)
     else
         toReturn = Array[]
+        dimItems = [unique(df[!,col]) for col in dimsNameCols] # this should be general, i.e. independent on the specific variable we are looking at
         for var in vars
             dfVar = df[df[!,varNameCol] .== var,:]
-            dimItems = [unique(dfVar[!,col]) for col in dimsNameCols]
             size = [length(dimItem_i) for dimItem_i in dimItems]
             varArray = defVars(size, valueType=valueType,n=1)[1]
 
@@ -172,7 +172,7 @@ macro meq(eq) # works without MacroTools
         error("Didn't understand the Left Hand Side.")
     end
     #show(ret)
-    return ret
+    return esc(ret)
 end
 
 

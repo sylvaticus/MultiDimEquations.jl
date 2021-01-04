@@ -1,16 +1,13 @@
 name = "MultiDimEquations"
 uuid = "a3219271-55cc-59b6-9a1f-6f3111928ce1"
 authors = ["Antonello Lobianco <antonello@lobianco.org>"]
-version = "1.1.0"
+version = "2.0"
 
 [deps]
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 IndexedTables = "6deec6e2-d858-57c5-ab9b-e6ca5bd20e43"
-CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 
 [compat]
 DataFrames = "0.21, 0.22"
 IndexedTables = "0.13"
-CSV = "0.8"
 julia = "1.0"
-
