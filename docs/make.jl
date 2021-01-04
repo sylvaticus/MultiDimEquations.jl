@@ -5,7 +5,7 @@ push!(LOAD_PATH,"../src/")
 makedocs(sitename="MultiDimEquations.jl Documentation",
          pages = [
             "Index" => "index.md",
-            "MultiDimEquations module" => "MultiDimEquations.md",
+            #"MultiDimEquations module" => "MultiDimEquations.md",
          ],
          format = Documenter.HTML(prettyurls = false)
 )

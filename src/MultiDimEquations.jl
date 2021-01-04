@@ -1,89 +1,31 @@
+"""
+    MultiDimEquations
+
+The package provides handy functions to work with NDSparse (from IndexedTables.jl package)
+or standard arrays in order to write equations in a concise and readable way.
+The formers can be accessed by name, but are somehow slower, the latters are faster
+but need to be accessed by position.
+
+`defVars()` defines either empty NDSparse with the dimensions (axis) required or
+arrays with the required size and prefilled with `missing` values. More variables
+can be defined at once.
+
+`defLoadVar()` and `defLoadVars()` allow to define and import the variables from
+a DataFrame in long format (dim1|dim2|...|value), with the second one allowing to
+import more varaibles at once, given the presence of a column in the database with
+the variable names.
+
+`@meq` is a macro that allows to write your "model equations" more concisely, e.g.
+`@meq par1[d1 in DIM1, d2 in DIM2, dfix3] =  par2[d1,d2]+par3[d1,d2]` would be
+expanded to use the list comprehension expression above:
+`[par1[d1,d2,dfix3] =  par2[d1,d2]+par3[d1,d2] for d1 in DIM1, d2 in DIM2]`
+
+"""
 module MultiDimEquations
 
 using DataFrames, IndexedTables
 
-export defLoadVars, defVars, @meq
-
-
-##############################################################################
-#
-# defVars()
-#
-##############################################################################
-
-"""
-  defVars(vars, df, dimensions;<keyword arguments>)
-
-Create the required IndexedTables from a common DataFrame while specifing the dimensional columns.
-
-# Arguments
-* `vars`: the array of variables to lookup
-* `df`: the source of the dataframe, that must be in the format parName|d1|d2|...|value
-* `dimsNameCols`: the name of the column containing the dimensions over which the variables are defined
-* `varNameCol (def: "varName")`: the name of the column in the df containing the variables names
-* `valueCol (def: "value")`: the name of the column in the df containing the values
-
-# Examples
-```julia
-julia> (vol,mortCoef)  = defVars(["vol","mortCoef"], forData,["region","d1","year"], varNameCol="parName", valueCol="value")
-```
-"""
-function defLoadVars(vars, df, dimsNameCols; varNameCol="varName", valueCol="value",sparse=false)
-    valueType = eltype(df[!,valueCol])
-    nDims     = length(dimsNameCols)
-    if sparse
-        toReturn = NDSparse[]
-        sDimensions = [Symbol(d) for d in dimsNameCols]
-        for var in vars
-            filteredDf = df[df[!,varNameCol] .== var,:]
-            dimValues  = [filteredDf[:,dim] for dim in dimsNameCols]
-            values     = filteredDf[:,valueCol]
-            t = IndexedTables.NDSparse(dimValues..., names=sDimensions, values)
-            if length(vars) > 1
-                push!(toReturn,t)
-            else
-                return t
-            end
-        end
-        return (toReturn...,)
-    else
-        toReturn = Array[]
-        dimItems = [unique(df[!,col]) for col in dimsNameCols] # this should be general, i.e. independent on the specific variable we are looking at
-        for var in vars
-            dfVar = df[df[!,varNameCol] .== var,:]
-            size = [length(dimItem_i) for dimItem_i in dimItems]
-            varArray = defVars(size, valueType=valueType,n=1)[1]
-
-            for i in CartesianIndices(varArray)
-               cIdx = Tuple(i)
-               particularDims = [map(x->dimItems[d][x], cIdx[d]) for d in 1:nDims]
-
-               selectionArray = fill(false,Base.size(dfVar,1))
-               for (i,row) in enumerate(eachrow(dfVar))
-                   dimFilter = true
-                   for (d,dim) in enumerate(dimsNameCols)
-                       if (row[dim] != particularDims[d])
-                           dimFilter = false
-                           break
-                       end
-                   end
-                   selectionArray[i] = dimFilter
-               end
-               particularValueArray = dfVar[selectionArray,valueCol]
-               if(length(particularValueArray)>1)
-                   @error "In converting a long dataframe to an array, I found more than one record with the same keys."
-               elseif length(particularValueArray)==0
-                   particularValue = missing
-               else
-                   particularValue = particularValueArray[1]
-               end
-               varArray[i]  = particularValue
-            end
-            push!(toReturn,varArray)
-        end
-        return (toReturn...,)
-    end
-end
+export defLoadVars, defLoadVar, defVars, @meq
 
 ##############################################################################
 #
@@ -94,33 +36,174 @@ end
 """
   defVars(dimNames, dimTypes; <keyword arguments>)
 
-Define empty IndexedTable(s) with the specific dimension(s) and type(s).
+Define empty NDSparse IndexedTable(s) with the specific dimension(s) and type.
 
 # Arguments
-* `dimNames`: array of names of the dimensions to define (can be empty)
-* `dimTypes`: array of types of the dimensions (must be same length of dimNames if the latter is not null)
-* `valueType=[Float64]` array of types of the value cols to define (must be same length of valueNames if the latter is not null)
-* `n=1`: number of copies of the specified tables to return
+* `dimNames`: Array of names of the dimensions to define
+* `dimTypes`: Array of types of the dimensions
+* `valueType` (def: `Float64`):  Type of the value column of the table
+* `n` (def=`1`): Number of copies of the specified tables to return (useful to define multiple variables at once. In such cases a tuple is returned)
 
 # # Examples
 # ```julia
-# julia> price,demand,supply = defEmptyVars(["region","item","qclass"],[String,String,Int64],valueNames=["val2000","val2010"],valueTypes=[Float64,Float64],n=3 )
-# julia> waterContent = defEmptyVars(["region","item"],[String,String])
-# julia> price["US","apple",1] = 3.2,3.4
+# julia> price,demand,supply = defVars(["region","item","class"],[String,String,Int64],valueType=Float64,n=3 )
+# julia> waterContent = defVars(["region","item"],[String,String])
+# julia> price["US","apple",1] = 3.2
 # julia> waterContent["US","apple"] = 0.2
 # ```
-#
-# # Notes
-# Single index or single column can not be associated to a name.
 # """
 function defVars(dimNames, dimTypes; valueType=Float64,n=1)
       values = [Array{T,1}() for T in vcat(dimTypes,valueType)]
-      return fill(deepcopy(NDSparse(values...,names=Symbol.(dimNames))),n)
+      if n==1
+          return NDSparse(values...,names=Symbol.(dimNames))
+      else
+          return fill(deepcopy(NDSparse(values...,names=Symbol.(dimNames))),n)
+      end
 end
 
+"""
+  defVars(size; <keyword arguments>)
+
+Define multidimensional array(s) with the specific dimension(s) and type filled all with `missing` values.
+
+# Arguments
+* `size`: Tuple of the dimensions required
+* `valueType` (def: `Float64`):  Inner type of the array required
+* `n` (def=`1`): Number of copies of the specified tables to return (useful to define multiple variables at once. In such cases a tuple is returned)
+
+# # Examples
+# ```julia
+# julia> price,demand,supply = defVars((3,4,5),valueType=Float64,n=3 )
+# julia> waterContent = defVars((3,4))
+# julia> price[2,3,1] = 3.2
+# julia> waterContent[2,3] = 0.2
+# ```
+# """
 function defVars(size; valueType=Float64,n=1)
-    return fill(deepcopy(Array{Union{Missing,valueType},length(size)}(missing,size...)),n)
+    if n==1
+        return Array{Union{Missing,valueType},length(size)}(missing,size...)
+    else
+        return fill(deepcopy(Array{Union{Missing,valueType},length(size)}(missing,size...)),n)
+    end
 end
+
+
+##############################################################################
+#
+# defLoadVars()
+#
+##############################################################################
+
+"""
+  defLoadVar(df, dimsNameCols; <keyword arguments>)
+
+Define the required IndexedTables or Arrays and load the data from a DataFrame in long format while specifing the dimensional columns.
+
+# Arguments
+* `df`: The source of the dataframe, that must be in the format dim1|dim2|...|value
+* `dimsNameCols`: The names of the columns corresponding to the dimensions over which the variables are defined (the keys)
+* `valueCol (def: "value")`: The name of the column in the df containing the values
+* `sparse (def: "true")`: Wheter to return `NDSparse` elements (from IndexedTable) or standard arrays
+
+# Notes
+* Sparse indexed tables can be accessed by element but are slower, standard arrays need to be accessed by position but are faster
+
+# Examples
+```julia
+julia> vol  = defVars(volumeData,["region","treeSpecie","year"], valueCol="value")
+```
+"""
+function defLoadVar(df, dimsNameCols; valueCol="value",sparse=true)
+    valueType = eltype(df[!,valueCol])
+    nDims     = length(dimsNameCols)
+    if sparse
+        sDimensions = [Symbol(d) for d in dimsNameCols]
+        dimValues  = [df[:,dim] for dim in dimsNameCols]
+        values     = df[:,valueCol]
+        t = IndexedTables.NDSparse(dimValues..., names=sDimensions, values)
+        return t
+    else
+        toReturn = Array[]
+        dimItems = [unique(df[!,col]) for col in dimsNameCols] # this should be general, i.e. independent on the specific variable we are looking at
+        size = [length(dimItem_i) for dimItem_i in dimItems]
+        varArray = defVars(size, valueType=valueType,n=1)
+
+        for i in CartesianIndices(varArray)
+           cIdx = Tuple(i)
+           particularDims = [map(x->dimItems[d][x], cIdx[d]) for d in 1:nDims]
+           selectionArray = fill(false,Base.size(df,1))
+           for (i,row) in enumerate(eachrow(df))
+               dimFilter = true
+               for (d,dim) in enumerate(dimsNameCols)
+                   if (row[dim] != particularDims[d])
+                       dimFilter = false
+                       break
+                   end
+               end
+               selectionArray[i] = dimFilter
+           end
+           particularValueArray = df[selectionArray,valueCol]
+           if(length(particularValueArray)>1)
+               @error "In converting a long dataframe to an array, I found more than one record with the same keys."
+               particularValue = missing
+           elseif length(particularValueArray)==0
+               particularValue = missing
+           else
+               particularValue = particularValueArray[1]
+           end
+           varArray[i]  = particularValue
+        end
+        varArray
+    end
+end
+
+##############################################################################
+#
+# defLoadVars()
+#
+##############################################################################
+
+"""
+  defLoadVars(vars, df, dimsNameCols; <keyword arguments>)
+
+Define the required IndexedTables or Arrays and load the data from a DataFrame in long format while specifing the dimensional columns and the column containing the variable names.
+
+Like `varLoadVar` but here we are extracting multiple variables at once, with one column of the input dataframe storing the variable name.
+
+# Arguments
+* `vars`: The array of variables to lookup
+* `df`: The source of the dataframe, that must be in the format dim1|dim2|...|varName|value
+* `dimsNameCols`: The name of the column containing the dimensions over which the variables are defined
+* `varNameCol (def: "varName")`: The name of the column in the df containing the variables names
+* `valueCol (def: "value")`: The name of the column in the df containing the values
+* `sparse (def: "true")`: Wheter to return `NDSparse` elements (from IndexedTable) or standard arrays
+
+# Notes
+* Sparse indexed tables can be accessed by element but are slower, standard arrays need to be accessed by position but are faster
+
+# Examples
+```julia
+julia> (vol,numberOfTrees)  = defVars(["vol","numberOfTrees"], forestData,["region","treeSpecie","year"], varNameCol="parName", valueCol="value")
+```
+"""
+function defLoadVars(vars, df, dimsNameCols; varNameCol="varName", valueCol="value",sparse=true)
+    if sparse
+        toReturn = NDSparse[]
+    else
+        toReturn = Array[]
+    end
+    for var in vars
+        filteredDf = df[df[!,varNameCol] .== var,:]
+        varData = defLoadVar(filteredDf, dimsNameCols; valueCol=valueCol,sparse=sparse)
+        if length(vars) > 1
+            push!(toReturn,varData)
+        else
+            return t
+        end
+    end
+    return (toReturn...,)
+end
+
 
 ##############################################################################
 #
@@ -144,7 +227,7 @@ and obtain
 [par1[d1,d2,dfix3] =  par2[d1,d2]+par3[d1,d2] for d1 in DIM1, d2 in DIM2]
 ```
 
-That is, it is possible to write equations in a concise and readable way
+That is, it is possible to write "model equations" in a concise and readable way.
 
 """
 macro meq(eq) # works without MacroTools
@@ -174,6 +257,5 @@ macro meq(eq) # works without MacroTools
     #show(ret)
     return esc(ret)
 end
-
 
 end # end module

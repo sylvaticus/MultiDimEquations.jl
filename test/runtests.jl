@@ -6,6 +6,10 @@ using MultiDimEquations
 # Checking empty variable definition
 (exp,consumption)   = defVars(["product","regions","years"],[String,String,Int64],n=2)
 (exp2,consumption2) = defVars([3,2,5],n=2)
+consumption10 = defVars(["product","regions","years"],[String,String,Int64])
+consumption20 = defVars([3,2,5])
+@test consumption10 == consumption
+@test size(consumption20) == size(consumption2)
 exp["banana","Canada",2010] = 2
 @test exp["banana","Canada",2010] + 1 == 3
 consumption2[2,1,5] = 2
@@ -33,6 +37,11 @@ eu juice production missing
 eu juice transfCoef missing
 eu juice trValues missing
 """), DataFrame, delim=" ", ignorerepeated=true, copycols=true, missingstring="missing") # missing eu banana trValues      1
+
+prodDf      = df[df.var .== "production",:]
+prodSingle  = defLoadVar(prodDf,["reg","prod"], valueCol="value",sparse=true)
+prodSingle2 = defLoadVar(prodDf,["reg","prod"], valueCol="value",sparse=false)
+
 (production,transfCoef,trValues)     = defLoadVars(["production","transfCoef","trValues"], df,["reg","prod"], varNameCol="var", valueCol="value",sparse=true)
 (production2,transfCoef2,trValues2)  = defLoadVars(["production","transfCoef","trValues"], df,["reg","prod"], varNameCol="var", valueCol="value",sparse=false)
 
@@ -64,8 +73,8 @@ d = deepcopy(production2)
 
 @test a["us","juice"] ≈ b["us","juice"] ≈ c[findfirst(isequal("us"),reg),findfirst(isequal("juice"),products)] ≈ d[findfirst(isequal("us"),reg),findfirst(isequal("juice"),products)] ≈ 4.7
 
-(consumption,)   = defVars(["reg","prod"],[String,String])
-(consumption2,)  = defVars([2,3])
+consumption  = defVars(["reg","prod"],[String,String])
+consumption2 = defVars([2,3])
 
 @meq consumption[r in reg, pp in primPr] = production[r,pp] - trValues[r,pp]
 @meq consumption[r in reg, sp in secPr]  = production[r, sp]
