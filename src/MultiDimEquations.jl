@@ -34,7 +34,7 @@ export defLoadVars, defLoadVar, defVars, @meq
 ##############################################################################
 
 """
-  defVars(dimNames, dimTypes; <keyword arguments>)
+    defVars(dimNames, dimTypes; <keyword arguments>)
 
 Define empty NDSparse IndexedTable(s) with the specific dimension(s) and type.
 
@@ -62,7 +62,7 @@ function defVars(dimNames, dimTypes; valueType=Float64,n=1)
 end
 
 """
-  defVars(size; <keyword arguments>)
+    defVars(size; <keyword arguments>)
 
 Define multidimensional array(s) with the specific dimension(s) and type filled all with `missing` values.
 
@@ -95,7 +95,7 @@ end
 ##############################################################################
 
 """
-  defLoadVar(df, dimsNameCols; <keyword arguments>)
+    defLoadVar(df, dimsNameCols; <keyword arguments>)
 
 Define the required IndexedTables or Arrays and load the data from a DataFrame in long format while specifing the dimensional columns.
 
@@ -164,7 +164,7 @@ end
 ##############################################################################
 
 """
-  defLoadVars(vars, df, dimsNameCols; <keyword arguments>)
+    defLoadVars(vars, df, dimsNameCols; <keyword arguments>)
 
 Define the required IndexedTables or Arrays and load the data from a DataFrame in long format while specifing the dimensional columns and the column containing the variable names.
 
@@ -212,7 +212,7 @@ end
 ##############################################################################
 
 """
-   meq(exp)
+    meq(exp)
 
 Macro to expand functions like `t[d1 in dim1, d2 in dim2, dfix,..] = value`
 
