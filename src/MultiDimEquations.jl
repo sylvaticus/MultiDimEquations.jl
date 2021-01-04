@@ -198,7 +198,7 @@ function defLoadVars(vars, df, dimsNameCols; varNameCol="varName", valueCol="val
         if length(vars) > 1
             push!(toReturn,varData)
         else
-            return t
+            return varData
         end
     end
     return (toReturn...,)

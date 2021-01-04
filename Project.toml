@@ -1,7 +1,7 @@
 name = "MultiDimEquations"
 uuid = "a3219271-55cc-59b6-9a1f-6f3111928ce1"
 authors = ["Antonello Lobianco <antonello@lobianco.org>"]
-version = "2.0"
+version = "2.0.1"
 
 [deps]
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
