@@ -2,11 +2,11 @@
 
 Allows to write multi-dimensional equations in Julia using a readable and compact syntax:
 
-```
+```julia
 @meq nTrees[r in reg, sp in species, dc in diameterClass[2-end], y in years] = nTrees[r, sp, dc, y-1]*(1-mortRate[r, sp, dc, y-1] - promotionRate[r, sp, dc, y-1]) +  nTrees[r, sp, dc-1, y-1] * promotionRate[r, sp, dc-1, y-1]
 ```
 
-It allow to write your model in a similar way of using an Algebraic modeling language (AML) like GAMS or Julia/JuMP, but outside the domain of optimisation.
+It is a bit like using an Algebraic modeling language (AML) like GAMS or Julia/JuMP, but outside the domain of optimisation.
 
 [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://sylvaticus.github.io/MultiDimEquations.jl/stable)
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://sylvaticus.github.io/MultiDimEquations.jl/dev)
@@ -23,7 +23,7 @@ It allow to write your model in a similar way of using an Algebraic modeling lan
 
 Define or define and load the data for each group of variables from a DataFrame in long format, i.e. in the format dim1|dim2|...|value or dim1|dim2|...|variableName|value
 
-```
+```julia
 df = CSV.read(IOBuffer("""
 reg prod var value
 us banana production 10
@@ -56,7 +56,7 @@ For more info type `?defVars` or `?defLoadVars` once you installed and loaded th
 # Defining the "set" (dimensions) of your data
 These are simple Julia Arrays..
 
-```
+```julia
 reg      = unique(df.reg)
 products = unique(df.prod)
 primPr   = products[1:2]
@@ -67,7 +67,7 @@ secPr    = [products[3]]
 
 The @meq macro adds a bit of convenience transforming at parse time (so, without adding run-time overheads) your equation from `par1[d1 in DIM1, d2 in DIM2, dfix3] = par2[d1,d2]+par3[d1,d2]` to `[par1[d1,d2,dfix3] = par2[d1,d2]+par3[d1,d2] for d1 in dim1, d2 in dim2]`.
 
-```
+```julia
 # equivalent to [production[r, sp] = sum(trValues[r,pp] * transfCoef[r,pp]  for pp in primPr) for r in reg, sp in secPr]
 @meq production[r in reg, sp in secPr]   = sum(trValues[r,pp] * transfCoef[r,pp]  for pp in primPr)
 @meq consumption[r in reg, pp in primPr] = production[r,pp] - trValues[r,pp]
