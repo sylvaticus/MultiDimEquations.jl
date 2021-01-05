@@ -25,7 +25,7 @@ module MultiDimEquations
 
 using DataFrames, IndexedTables
 
-export defLoadVars, defLoadVar, defVars, @meq
+export defLoadVars, defLoadVar, defVars, @meq, getSafe
 
 ##############################################################################
 #
@@ -70,6 +70,8 @@ Define multidimensional array(s) with the specific dimension(s) and type filled 
 * `size`: Tuple of the dimensions required
 * `valueType` (def: `Float64`):  Inner type of the array required
 * `n` (def=`1`): Number of copies of the specified tables to return (useful to define multiple variables at once. In such cases a tuple is returned)
+* `missingValue` (def=`missing`): How to fill the matrix with
+
 
 # # Examples
 # ```julia
@@ -79,11 +81,14 @@ Define multidimensional array(s) with the specific dimension(s) and type filled 
 # julia> waterContent[2,3] = 0.2
 # ```
 # """
-function defVars(size; valueType=Float64,n=1)
+function defVars(size; valueType=Float64,n=1,missingValue=missing)
+    missingValueType = typeof(missingValue)
+    val = fill(missingValue,size...)
+    val = convert(Array{Union{missingValueType,valueType},length(size)},val)
     if n==1
-        return Array{Union{Missing,valueType},length(size)}(missing,size...)
+        return val
     else
-        return fill(deepcopy(Array{Union{Missing,valueType},length(size)}(missing,size...)),n)
+        return fill(deepcopy(val),n)
     end
 end
 
@@ -104,6 +109,7 @@ Define the required IndexedTables or Arrays and load the data from a DataFrame i
 * `dimsNameCols`: The names of the columns corresponding to the dimensions over which the variables are defined (the keys)
 * `valueCol (def: "value")`: The name of the column in the df containing the values
 * `sparse (def: "true")`: Wheter to return `NDSparse` elements (from IndexedTable) or standard arrays
+* `missingValue` (def=`missing`): How to fill the matrix with (relevant only for arrays)
 
 # Notes
 * Sparse indexed tables can be accessed by element but are slower, standard arrays need to be accessed by position but are faster
@@ -113,7 +119,7 @@ Define the required IndexedTables or Arrays and load the data from a DataFrame i
 julia> vol  = defVars(volumeData,["region","treeSpecie","year"], valueCol="value")
 ```
 """
-function defLoadVar(df, dimsNameCols; valueCol="value",sparse=true)
+function defLoadVar(df, dimsNameCols; valueCol="value",sparse=true,missingValue=missing)
     valueType = eltype(df[!,valueCol])
     nDims     = length(dimsNameCols)
     if sparse
@@ -126,7 +132,7 @@ function defLoadVar(df, dimsNameCols; valueCol="value",sparse=true)
         toReturn = Array[]
         dimItems = [unique(df[!,col]) for col in dimsNameCols] # this should be general, i.e. independent on the specific variable we are looking at
         size = [length(dimItem_i) for dimItem_i in dimItems]
-        varArray = defVars(size, valueType=valueType,n=1)
+        varArray = defVars(size, valueType=valueType,n=1,missingValue=missingValue)
 
         for i in CartesianIndices(varArray)
            cIdx = Tuple(i)
@@ -145,9 +151,9 @@ function defLoadVar(df, dimsNameCols; valueCol="value",sparse=true)
            particularValueArray = df[selectionArray,valueCol]
            if(length(particularValueArray)>1)
                @error "In converting a long dataframe to an array, I found more than one record with the same keys."
-               particularValue = missing
-           elseif length(particularValueArray)==0
-               particularValue = missing
+               particularValue = missingValue
+           elseif length(particularValueArray)==0 # this combination is not found
+               particularValue = missingValue
            else
                particularValue = particularValueArray[1]
            end
@@ -256,6 +262,40 @@ macro meq(eq) # works without MacroTools
     end
     #show(ret)
     return esc(ret)
+end
+
+
+##############################################################################
+#
+# getSafe()
+#
+##############################################################################
+
+"""
+    getSafe(idxtable,indices,missingValue=missing)
+
+Return the value stored in a NDSParse table or missingValue if the specified keys are not present.
+
+# Arguments
+* `idxtable`: The NDSParse table to lookup
+* `indices`: A tuple with the indices to use (`:` is supported)
+* `missingValue`: The value to return if the specified keys are not found
+
+# Examples
+```julia
+julia> volBlackForest2014  = getSafe(forestVolumes,("BlackForest",2014),0.0)
+```
+"""
+function getSafe(idxtable,indices,missingValue=missing)
+    try
+        return idxtable[indices...]
+    catch  e
+        if isa(e, KeyError)
+            return missingValue
+        else
+            rethrow(e)
+        end
+    end
 end
 
 end # end module

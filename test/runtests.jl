@@ -2,14 +2,16 @@ using Test
 using DataFrames, CSV
 using MultiDimEquations
 
+println("*** Start testing of MultiDimEquations...")
+
 # *** NEW TEST
 # Checking empty variable definition
 (exp,consumption)   = defVars(["product","regions","years"],[String,String,Int64],n=2)
-(exp2,consumption2) = defVars([3,2,5],n=2)
+(exp2,consumption2) = defVars([3,2,5],n=2,missingValue=missing)
 consumption10 = defVars(["product","regions","years"],[String,String,Int64])
 consumption20 = defVars([3,2,5])
 @test consumption10 == consumption
-@test size(consumption20) == size(consumption2)
+@test Base.size(consumption20) == Base.size(consumption2)
 exp["banana","Canada",2010] = 2
 @test exp["banana","Canada",2010] + 1 == 3
 consumption2[2,1,5] = 2
@@ -85,3 +87,10 @@ totalConsumption = sum(consumption[r,p] for r in reg, p in products)
 @meq consumption2[r in eachindex(reg), sp in secPrIdx]  = production2[r, sp]
 totalConsumption2 = sum(consumption2[r,p] for r in eachindex(reg), p in eachindex(products))
 @test totalConsumption2 == 26.6
+
+
+# *** NEW TEST
+# checking getSafe()
+
+@test getSafe(production,("us","banana"))      == 10
+@test getSafe(production,("us","oranges"),0.0) == 0.0
