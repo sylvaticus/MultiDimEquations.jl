@@ -57,7 +57,7 @@ function defVars(dimNames, dimTypes; valueType=Float64,n=1)
       if n==1
           return NDSparse(values...,names=Symbol.(dimNames))
       else
-          return fill(deepcopy(NDSparse(values...,names=Symbol.(dimNames))),n)
+          return [deepcopy(NDSparse(values...,names=Symbol.(dimNames))) for i in 1:n]
       end
 end
 
@@ -88,7 +88,7 @@ function defVars(size; valueType=Float64,n=1,missingValue=missing)
     if n==1
         return val
     else
-        return fill(deepcopy(val),n)
+        return [deepcopy(val) for i in 1:n]
     end
 end
 

@@ -13,9 +13,14 @@ consumption20 = defVars([3,2,5])
 @test consumption10 == consumption
 @test Base.size(consumption20) == Base.size(consumption2)
 exp["banana","Canada",2010] = 2
+consumption["banana","Canada",2010] = 4
+@test exp["banana","Canada",2010] == 2 # testing they are different memory locations
 @test exp["banana","Canada",2010] + 1 == 3
 consumption2[2,1,5] = 2
 @test consumption2[2,1,5] + 1 == 3
+exp2[2,1,5] = 10
+@test consumption2[2,1,5] == 2
+
 
 # *** NEW TEST
 # checking loading variables from long-format dataframe
