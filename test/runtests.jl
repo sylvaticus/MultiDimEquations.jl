@@ -23,7 +23,6 @@ df = CSV.read(IOBuffer("""
 reg prod var value
 us banana production 10
 us banana transfCoef    0.6
-us banana trValues      2
 us apples production    7
 us apples transfCoef    0.7
 us apples trValues      5
@@ -38,14 +37,17 @@ eu apples trValues 4
 eu juice production missing
 eu juice transfCoef missing
 eu juice trValues missing
-"""), DataFrame, delim=" ", ignorerepeated=true, copycols=true, missingstring="missing") # missing eu banana trValues      1
+"""), DataFrame, delim=" ", ignorerepeated=true, copycols=true, missingstring="missing") # missing eu banana trValues      1 and us banana trValues      2
 
 prodDf      = df[df.var .== "production",:]
 prodSingle  = defLoadVar(prodDf,["reg","prod"], valueCol="value",sparse=true)
 prodSingle2 = defLoadVar(prodDf,["reg","prod"], valueCol="value",sparse=false)
 
 (production,transfCoef,trValues)     = defLoadVars(["production","transfCoef","trValues"], df,["reg","prod"], varNameCol="var", valueCol="value",sparse=true)
-(production2,transfCoef2,trValues2)  = defLoadVars(["production","transfCoef","trValues"], df,["reg","prod"], varNameCol="var", valueCol="value",sparse=false)
+(production2,transfCoef2,trValues2)  = defLoadVars(["production","transfCoef","trValues"], df,["reg","prod"], varNameCol="var", valueCol="value",sparse=false,fullKeys=true)
+trValues3  = defLoadVars(["trValues"], df,["reg","prod"], varNameCol="var", valueCol="value",sparse=false,fullKeys=false)
+@test Base.size(trValues2) == (2,3)
+@test Base.size(trValues3) == (2,2)
 
 reg = unique(df.reg)
 products = unique(df.prod)
@@ -62,8 +64,13 @@ primPrIdx = [1,2]
 secPrIdx  = [3]
 nReg      = length(reg)
 
+# Refilling the intentionally left out values...
 trValues["eu","banana"] = 1
+trValues["us","banana"] = 2
 trValues2[findfirst(isequal("eu"),reg),findfirst(isequal("banana"),products)] = 1
+trValues2[findfirst(isequal("us"),reg),findfirst(isequal("banana"),products)] = 2
+
+# Checking further computations..
 [production[r,sp]   =  sum(trValues[r,pp] * transfCoef[r,pp]  for pp in primPr) for r in reg, sp in secPr]
 a = deepcopy(production)
 @meq production[r in reg, sp in secPr]   = sum(trValues[r,pp] * transfCoef[r,pp]  for pp in primPr)

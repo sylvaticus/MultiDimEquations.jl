@@ -130,7 +130,7 @@ function defLoadVar(df, dimsNameCols; valueCol="value",sparse=true,missingValue=
         return t
     else
         toReturn = Array[]
-        dimItems = [unique(df[!,col]) for col in dimsNameCols] # this should be general, i.e. independent on the specific variable we are looking at
+        dimItems = [unique(df[!,col]) for col in dimsNameCols]
         size = [length(dimItem_i) for dimItem_i in dimItems]
         varArray = defVars(size, valueType=valueType,n=1,missingValue=missingValue)
 
@@ -183,31 +183,95 @@ Like `varLoadVar` but here we are extracting multiple variables at once, with on
 * `varNameCol (def: "varName")`: The name of the column in the df containing the variables names
 * `valueCol (def: "value")`: The name of the column in the df containing the values
 * `sparse (def: "true")`: Wheter to return `NDSparse` elements (from IndexedTable) or standard arrays
+* `missingValue` (def=`missing`): How to fill the matrix with (relevant only for arrays)
+* `fullKeys` (def=`true`): Wheter all the outputed variables should be based on the full set of keys,
+   or look for each of them on the keys found specifically for it in the filtered input dataframe
 
 # Notes
 * Sparse indexed tables can be accessed by element but are slower, standard arrays need to be accessed by position but are faster
+* At the moment `sameKeys=true` is implemented only for the non-sparse case
 
 # Examples
 ```julia
 julia> (vol,numberOfTrees)  = defVars(["vol","numberOfTrees"], forestData,["region","treeSpecie","year"], varNameCol="parName", valueCol="value")
 ```
 """
-function defLoadVars(vars, df, dimsNameCols; varNameCol="varName", valueCol="value",sparse=true)
-    if sparse
-        toReturn = NDSparse[]
-    else
-        toReturn = Array[]
-    end
-    for var in vars
-        filteredDf = df[df[!,varNameCol] .== var,:]
-        varData = defLoadVar(filteredDf, dimsNameCols; valueCol=valueCol,sparse=sparse)
-        if length(vars) > 1
-            push!(toReturn,varData)
+function defLoadVars(vars, df, dimsNameCols; varNameCol="varName", valueCol="value",sparse=true, missingValue=missing,fullKeys=true)
+    if (!fullKeys) # each variable its own keys set, I can use defLoadVar
+        if sparse
+            toReturn = NDSparse[]
         else
-            return varData
+            toReturn = Array[]
         end
+        for var in vars
+            filteredDf = df[df[!,varNameCol] .== var,:]
+            varData = defLoadVar(filteredDf, dimsNameCols; valueCol=valueCol,sparse=sparse,missingValue=missingValue)
+            if length(vars) > 1
+                push!(toReturn,varData)
+            else
+                return varData
+            end
+        end
+        return (toReturn...,)
+    else # all output variables share the same set of keys, I can't reuse defLoadVar
+        valueType = eltype(df[!,valueCol])
+        nDims     = length(dimsNameCols)
+        if sparse
+            toReturn = NDSparse[]
+            sDimensions = [Symbol(d) for d in dimsNameCols]
+            for var in vars
+                filteredDf = df[df[!,varNameCol] .== var,:]
+                dimValues  = [filteredDf[:,dim] for dim in dimsNameCols]
+                values     = filteredDf[:,valueCol]
+                t = IndexedTables.NDSparse(dimValues..., names=sDimensions, values)
+                if length(vars) > 1
+                    push!(toReturn,t)
+                else
+                    return t
+                end
+            end
+            return (toReturn...,)
+        else
+            toReturn = Array[]
+            dimItems = [unique(df[!,col]) for col in dimsNameCols] # this should be general, i.e. independent on the specific variable we are looking at
+            size = [length(dimItem_i) for dimItem_i in dimItems]
+            for var in vars
+                dfVar = df[df[!,varNameCol] .== var,:]
+                varArray = defVars(size, valueType=valueType,n=1,missingValue=missingValue)
+                for i in CartesianIndices(varArray)
+                   cIdx = Tuple(i)
+                   particularDims = [map(x->dimItems[d][x], cIdx[d]) for d in 1:nDims]
+
+                   selectionArray = fill(false,Base.size(dfVar,1))
+                   for (i,row) in enumerate(eachrow(dfVar))
+                       dimFilter = true
+                       for (d,dim) in enumerate(dimsNameCols)
+                           if (row[dim] != particularDims[d])
+                               dimFilter = false
+                               break
+                           end
+                       end
+                       selectionArray[i] = dimFilter
+                   end
+                   particularValueArray = dfVar[selectionArray,valueCol]
+                   if(length(particularValueArray)>1)
+                       @error "In converting a long dataframe to an array, I found more than one record with the same keys."
+                       particularValue = missingValue
+                   elseif length(particularValueArray)==0
+                       particularValue = missingValue
+                   else
+                       particularValue = particularValueArray[1]
+                   end
+                   varArray[i]  = particularValue
+                end
+                push!(toReturn,varArray)
+            end
+            return (toReturn...,)
+        end
+
+
+
     end
-    return (toReturn...,)
 end
 
 
