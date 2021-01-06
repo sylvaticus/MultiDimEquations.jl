@@ -25,7 +25,7 @@ module MultiDimEquations
 
 using DataFrames, IndexedTables
 
-export defLoadVars, defLoadVar, defVars, @meq, getSafe
+export defLoadVars, defLoadVar, defVars, @meq, getSafe, toDataFrame
 
 ##############################################################################
 #
@@ -361,5 +361,39 @@ function getSafe(idxtable,indices,missingValue=missing)
         end
     end
 end
+
+
+##############################################################################
+#
+# toDataFrame()
+#
+##############################################################################
+
+"""
+    toDataFrame(idxtable::NDSparse)
+
+Convert a single-value-column NDSParse table to `DataFrame`.
+
+# Arguments
+* `idxtable`: The NDSParse table to convert
+
+
+# Examples
+```julia
+julia> content = [["banana","banana","apple","apple","orange"],["us",missing,"us","eu","us"],[1.1,2.2,3.3,missing,5.5]]
+julia> dimNames = ["item","region"]
+julia> t = NDSparse(content...,names=Symbol.(dimNames))
+julia> df = toDataFrame(t)
+```
+"""
+function toDataFrame(t::NDSparse)
+    names = vcat(keys(keys(t)[1])...,:value)
+    cols  = columns(t)
+    return DataFrame(map((n,v) -> Pair(n,v), names, cols))
+end
+
+
+
+
 
 end # end module

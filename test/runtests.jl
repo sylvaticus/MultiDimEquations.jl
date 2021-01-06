@@ -1,6 +1,7 @@
 using Test
 using DataFrames, CSV
 using MultiDimEquations
+using IndexedTables
 
 println("*** Start testing of MultiDimEquations...")
 
@@ -106,3 +107,12 @@ totalConsumption2 = sum(consumption2[r,p] for r in eachindex(reg), p in eachinde
 
 @test getSafe(production,("us","banana"))      == 10
 @test getSafe(production,("us","oranges"),0.0) == 0.0
+
+# *** NEW TEST
+# checking toDataFrame()
+
+content  = [["banana","banana","apple","apple","orange"],["us",missing,"us","eu","us"],[1.1,2.2,3.3,missing,5.5]]
+dimNames = ["item","region"]
+t        = NDSparse(content...,names=Symbol.(dimNames))
+df       = toDataFrame(t)
+@test df[((df.item .== "banana") .* ismissing.(df.region)),"value"][1] == 2.2
