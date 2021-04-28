@@ -9,5 +9,5 @@ IndexedTables = "6deec6e2-d858-57c5-ab9b-e6ca5bd20e43"
 
 [compat]
 DataFrames = "0.21, 0.22"
-IndexedTables = "0.13"
+IndexedTables = "0.13, 1.0"
 julia = "1.0"
