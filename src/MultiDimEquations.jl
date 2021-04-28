@@ -392,8 +392,4 @@ function toDataFrame(t::NDSparse)
     return DataFrame(map((n,v) -> Pair(n,v), names, cols))
 end
 
-
-
-
-
 end # end module
